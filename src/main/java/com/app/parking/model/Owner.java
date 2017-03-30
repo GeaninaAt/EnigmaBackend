@@ -18,6 +18,13 @@ public class Owner extends BaseEntity {
 
     private String ownerLastName;
 
+    public Owner(String ownerFirstName, String ownerLastName) {
+        this.ownerFirstName = ownerFirstName;
+        this.ownerLastName = ownerLastName;
+    }
+
+    public Owner(){}
+
     @OneToMany(mappedBy = "parkingAreaOwner")
     @JsonIgnore
     private List<ParkingArea> ownedParkingAreas;

@@ -20,7 +20,7 @@ import java.security.Principal;
  * Created by gatomulesei on 3/28/2017.
  */
 @RestController
-@RequestMapping("rest/users")
+@RequestMapping("/rest/users")
 public class UserEndpoint{
 
     @Autowired

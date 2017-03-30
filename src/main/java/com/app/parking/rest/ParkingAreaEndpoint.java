@@ -1,9 +1,11 @@
 package com.app.parking.rest;
 
+import com.app.parking.model.Coordinates;
 import com.app.parking.model.ParkingArea;
 import com.app.parking.repository.OwnerRepository;
 import com.app.parking.repository.ParkingAreaRepository;
 import com.app.parking.rest.utils.CreateParkingArea;
+import com.app.parking.service.GeocodingService;
 import com.app.parking.service.ParkingAreaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,10 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.BinaryOperator;
+
+import static com.app.parking.rest.utils.CoordinatesUtils.distanceBetween;
 
 /**
  * Created by gatomulesei on 3/27/2017.
@@ -22,6 +28,9 @@ import java.util.List;
 public class ParkingAreaEndpoint {
 
     @Autowired
+    GeocodingService geocodingService;
+
+    @Autowired
     private ParkingAreaService parkingAreaService;
 
     @Autowired
@@ -29,6 +38,12 @@ public class ParkingAreaEndpoint {
 
     @Autowired
     private OwnerRepository ownerRepository;
+
+    @Autowired
+    public ParkingAreaEndpoint(GeocodingService geocodingService, ParkingAreaRepository parkingAreaRepository){
+        this.geocodingService = geocodingService;
+        this.parkingAreaRepository = parkingAreaRepository;
+    }
 
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<?> addParkingArea(@RequestBody @Valid CreateParkingArea createParkingArea){
@@ -82,5 +97,22 @@ public class ParkingAreaEndpoint {
         return ResponseEntity.created(location).build();
     }
 
+
+    @RequestMapping(value = "/nearest", method = RequestMethod.GET)
+    @ResponseBody
+    public Optional<ParkingArea> getNearest(@RequestParam double longitude, @RequestParam double latitude){
+        return parkingAreaRepository.findAll().stream()
+                .reduce(byDistanceTo(longitude, latitude))
+                .map(ParkingArea::from);
+    }
+
+    private static BinaryOperator<ParkingArea> byDistanceTo(double longitude, double latitude) {
+        return (s1, s2) -> {
+            final double s1Distance = distanceBetween(s1.getCoordinates(), new Coordinates(longitude, latitude));
+            final double s2Distance = distanceBetween(s2.getCoordinates(), new Coordinates(longitude, latitude));
+
+            return s1Distance < s2Distance ? s1 : s2;
+        };
+    }
 
 }
